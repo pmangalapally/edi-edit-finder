@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EDI X12 TA1 Edit Codes Reference</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f0f4f8;
+      color: #1a202c;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a365d 0%, #2a69ac 100%);
+      color: #fff;
+      padding: 2rem 1.5rem 1.5rem;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    header h1 {
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      margin-top: 0.4rem;
+      font-size: 0.95rem;
+      opacity: 0.85;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 3rem;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .search-wrapper {
+      flex: 1 1 260px;
+      position: relative;
+    }
+
+    .search-wrapper svg {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #718096;
+      pointer-events: none;
+    }
+
+    #filterInput {
+      width: 100%;
+      padding: 0.65rem 0.75rem 0.65rem 2.25rem;
+      border: 2px solid #cbd5e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    #filterInput:focus { border-color: #3182ce; }
+
+    #clearBtn {
+      padding: 0.65rem 1.1rem;
+      background: #e2e8f0;
+      border: 2px solid #cbd5e0;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #4a5568;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+
+    #clearBtn:hover { background: #cbd5e0; border-color: #a0aec0; }
+
+    .count-badge {
+      font-size: 0.875rem;
+      color: #4a5568;
+      font-weight: 500;
+      white-space: nowrap;
+      padding: 0.4rem 0.75rem;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 10px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 580px;
+    }
+
+    thead {
+      background: #2d3748;
+      color: #fff;
+      position: sticky;
+      top: 0;
+    }
+
+    thead th {
+      padding: 0.85rem 1rem;
+      text-align: left;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #edf2f7;
+      transition: background 0.12s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #ebf4ff; }
+
+    td {
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      vertical-align: middle;
+    }
+
+    /* Code column */
+    td:first-child {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #2d3748;
+      white-space: nowrap;
+    }
+
+    /* Category badge */
+    .cat-badge {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .cat-ack  { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; }
+    .cat-note { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+
+    /* Impact badge */
+    .impact-badge {
+      display: inline-block;
+      padding: 0.22rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .imp-accept  { background: #c6f6d5; color: #22543d; }
+    .imp-warn    { background: #fefcbf; color: #744210; }
+    .imp-reject  { background: #fed7d7; color: #822727; }
+    .imp-none    { background: #e2e8f0; color: #4a5568; }
+    .imp-error   { background: #fed7d7; color: #822727; }
+
+    /* Row accent */
+    tr.row-accept { border-left: 4px solid #48bb78; }
+    tr.row-warn   { border-left: 4px solid #ecc94b; }
+    tr.row-reject { border-left: 4px solid #fc8181; }
+    tr.row-none   { border-left: 4px solid #a0aec0; }
+    tr.row-error  { border-left: 4px solid #fc8181; }
+
+    .no-results {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: #718096;
+      font-size: 1rem;
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 1.25rem 1rem 1rem; }
+      td, thead th { padding: 0.6rem 0.65rem; font-size: 0.82rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>EDI X12 TA1 Edit Codes Reference</h1>
+  <p>Interchange Acknowledgment — Acknowledgment &amp; Error/Note Codes</p>
+</header>
+
+<div class="container">
+
+  <div class="controls">
+    <div class="search-wrapper">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input id="filterInput" type="search" placeholder="Filter by code or description…" autocomplete="off" />
+    </div>
+    <button id="clearBtn">&#x2715; Clear</button>
+    <span class="count-badge" id="countBadge">Showing 0 of 0 codes</span>
+  </div>
+
+  <div class="table-wrapper">
+    <table id="codesTable" aria-label="TA1 Edit Codes">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Category</th>
+          <th>Description</th>
+          <th>Impact</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+      </tbody>
+    </table>
+    <div class="no-results" id="noResults" style="display:none;">No codes match your filter.</div>
+  </div>
+
+</div>
+
+<script>
+  const DATA = [
+    // ── Interchange Acknowledgment Codes (TA1-04 / I17) ──────────────────────
+    {
+      code: "A",
+      category: "Acknowledgment Code",
+      description: "The interchange was accepted with no errors",
+      impact: "Accept",
+      rowClass: "row-accept",
+      impactClass: "imp-accept"
+    },
+    {
+      code: "E",
+      category: "Acknowledgment Code",
+      description: "The interchange was accepted but errors were noted",
+      impact: "Accept with Errors",
+      rowClass: "row-warn",
+      impactClass: "imp-warn"
+    },
+    {
+      code: "R",
+      category: "Acknowledgment Code",
+      description: "The interchange was rejected because of errors",
+      impact: "Reject",
+      rowClass: "row-reject",
+      impactClass: "imp-reject"
+    },
+
+    // ── Interchange Note Codes (TA1-05 / I18) — Error Codes ─────────────────
+    {
+      code: "000",
+      category: "Error/Note Code",
+      description: "No error",
+      impact: "None",
+      rowClass: "row-none",
+      impactClass: "imp-none"
+    },
+    {
+      code: "001",
+      category: "Error/Note Code",
+      description: "The Interchange Control Number in the header and trailer do not match",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "002",
+      category: "Error/Note Code",
+      description: "This standard as noted in the control standards identifier is not supported",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "003",
+      category: "Error/Note Code",
+      description: "This version of the controls is not supported",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "004",
+      category: "Error/Note Code",
+      description: "The segment terminator is invalid",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "005",
+      category: "Error/Note Code",
+      description: "Invalid interchange ID qualifier for sender",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "006",
+      category: "Error/Note Code",
+      description: "Invalid interchange sender ID",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "007",
+      category: "Error/Note Code",
+      description: "Invalid interchange ID qualifier for receiver",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "008",
+      category: "Error/Note Code",
+      description: "Invalid interchange receiver ID",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "009",
+      category: "Error/Note Code",
+      description: "Unknown interchange receiver ID",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "010",
+      category: "Error/Note Code",
+      description: "Invalid authorization information qualifier value",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "011",
+      category: "Error/Note Code",
+      description: "Invalid authorization information value",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "012",
+      category: "Error/Note Code",
+      description: "Invalid security information qualifier value",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "013",
+      category: "Error/Note Code",
+      description: "Invalid security information value",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "014",
+      category: "Error/Note Code",
+      description: "Invalid interchange date value",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "015",
+      category: "Error/Note Code",
+      description: "Invalid interchange time value",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "016",
+      category: "Error/Note Code",
+      description: "Invalid interchange standards identifier value",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "017",
+      category: "Error/Note Code",
+      description: "Invalid interchange version ID value",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "018",
+      category: "Error/Note Code",
+      description: "Invalid interchange control number value",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "019",
+      category: "Error/Note Code",
+      description: "Invalid acknowledgment requested value",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "020",
+      category: "Error/Note Code",
+      description: "Invalid test indicator value",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "021",
+      category: "Error/Note Code",
+      description: "Invalid number of included groups value",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "022",
+      category: "Error/Note Code",
+      description: "Invalid control characters",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "023",
+      category: "Error/Note Code",
+      description: "Improper (premature) end-of-file (transmission)",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "024",
+      category: "Error/Note Code",
+      description: "Invalid interchange content (e.g., invalid GS segment)",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "025",
+      category: "Error/Note Code",
+      description: "Duplicate interchange control number",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "026",
+      category: "Error/Note Code",
+      description: "Invalid data element separator",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "027",
+      category: "Error/Note Code",
+      description: "Invalid component element separator",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "028",
+      category: "Error/Note Code",
+      description: "Invalid delivery date in deferred delivery request",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "029",
+      category: "Error/Note Code",
+      description: "Invalid delivery time in deferred delivery request",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "030",
+      category: "Error/Note Code",
+      description: "Invalid delivery time code in deferred delivery request",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    },
+    {
+      code: "031",
+      category: "Error/Note Code",
+      description: "Invalid grade of service code",
+      impact: "Error",
+      rowClass: "row-error",
+      impactClass: "imp-error"
+    }
+  ];
+
+  const tbody      = document.getElementById("tableBody");
+  const filterInput = document.getElementById("filterInput");
+  const clearBtn   = document.getElementById("clearBtn");
+  const countBadge = document.getElementById("countBadge");
+  const noResults  = document.getElementById("noResults");
+  const table      = document.getElementById("codesTable");
+
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function renderRows(query) {
+    const q = query.trim().toLowerCase();
+    const filtered = q
+      ? DATA.filter(d =>
+          d.code.toLowerCase().includes(q) ||
+          d.description.toLowerCase().includes(q) ||
+          d.category.toLowerCase().includes(q) ||
+          d.impact.toLowerCase().includes(q)
+        )
+      : DATA;
+
+    tbody.innerHTML = "";
+
+    if (filtered.length === 0) {
+      table.style.display = "none";
+      noResults.style.display = "block";
+    } else {
+      table.style.display = "";
+      noResults.style.display = "none";
+
+      filtered.forEach(d => {
+        const catClass = d.category === "Acknowledgment Code" ? "cat-ack" : "cat-note";
+        const tr = document.createElement("tr");
+        tr.className = d.rowClass;
+        tr.innerHTML =
+          `<td>${escapeHtml(d.code)}</td>` +
+          `<td><span class="cat-badge ${catClass}">${escapeHtml(d.category)}</span></td>` +
+          `<td>${escapeHtml(d.description)}</td>` +
+          `<td><span class="impact-badge ${d.impactClass}">${escapeHtml(d.impact)}</span></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    countBadge.textContent = `Showing ${filtered.length} of ${DATA.length} codes`;
+  }
+
+  filterInput.addEventListener("input", () => renderRows(filterInput.value));
+
+  clearBtn.addEventListener("click", () => {
+    filterInput.value = "";
+    renderRows("");
+    filterInput.focus();
+  });
+
+  // Initial render
+  renderRows("");
+</script>
+
+</body>
+</html>
